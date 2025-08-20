@@ -1,12 +1,11 @@
-// ... (imports iguales)
-import { useState, useEffect, useMemo } from 'react'
+// src/pages/ProductDetail.tsx
+import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { products } from '../data/products'
-import type { Product } from '../types/Product'
+import { Product } from '../types/Product'
 import PricingCalculator from '../components/PricingCalculator'
-import { useCart } from '../context/CartContext'
-import './ProductDetail.css'
 import QuotationForm from '../components/QuotationForm'
+import './ProductDetail.css'
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -14,29 +13,23 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState<string>('')
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [quantity, setQuantity] = useState<number>(1)
-  const { addItem } = useCart()
 
   useEffect(() => {
     if (id) {
       const foundProduct = products.find(p => p.id === parseInt(id))
       setProduct(foundProduct || null)
-      if (foundProduct?.colors?.length) setSelectedColor(foundProduct.colors[0])
-      if (foundProduct?.sizes?.length) setSelectedSize(foundProduct.sizes[0])
+
+      // Set default selections
+      if (foundProduct?.colors && foundProduct.colors.length > 0) {
+        setSelectedColor(foundProduct.colors[0])
+      }
+      if (foundProduct?.sizes && foundProduct.sizes.length > 0) {
+        setSelectedSize(foundProduct.sizes[0])
+      }
     }
   }, [id])
 
-  const unitPrice = useMemo(() => {
-    if (!product) return 0
-    if (!product.priceBreaks?.length) return product.basePrice
-    const sorted = [...product.priceBreaks].sort((a, b) => a.minQty - b.minQty)
-    let last = sorted[0]
-    for (const br of sorted) {
-      if (quantity >= br.minQty) last = br
-      else break
-    }
-    return last.price
-  }, [product, quantity])
-
+  // Handle loading/not-found state
   if (!product) {
     return (
       <div className="container">
@@ -53,6 +46,7 @@ const ProductDetail = () => {
     )
   }
 
+  // Validate product status
   const canAddToCart = product.status === 'active' && product.stock > 0
 
   return (
@@ -66,13 +60,15 @@ const ProductDetail = () => {
         </nav>
 
         <div className="product-detail">
-          {/* Imágenes ... (igual que antes) */}
+          {/* Product Images */}
           <div className="product-images">
             <div className="main-image">
               <div className="image-placeholder">
                 <span className="material-icons">image</span>
               </div>
             </div>
+
+            {/* Thumbnails */}
             <div className="image-thumbnails">
               {[1, 2, 3].map(i => (
                 <div key={i} className="thumbnail">
@@ -82,11 +78,13 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Info */}
+          {/* Product Info */}
           <div className="product-details">
             <div className="product-header">
               <h1 className="product-title h2">{product.name}</h1>
               <p className="product-sku p1">SKU: {product.sku}</p>
+
+              {/* Status */}
               <div className="product-status">
                 {product.status === 'active' ? (
                   <span className="status-badge status-active l1">✓ Disponible</span>
@@ -98,6 +96,7 @@ const ProductDetail = () => {
               </div>
             </div>
 
+            {/* Description */}
             {product.description && (
               <div className="product-description">
                 <h3 className="p1-medium">Descripción</h3>
@@ -105,7 +104,8 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {product.features?.length ? (
+            {/* Features */}
+            {product.features && product.features.length > 0 && (
               <div className="product-features">
                 <h3 className="p1-medium">Características</h3>
                 <ul className="features-list">
@@ -117,9 +117,10 @@ const ProductDetail = () => {
                   ))}
                 </ul>
               </div>
-            ) : null}
+            )}
 
-            {product.colors?.length ? (
+            {/* Color Selection */}
+            {product.colors && product.colors.length > 0 && (
               <div className="selection-group">
                 <h3 className="selection-title p1-medium">Colores disponibles</h3>
                 <div className="color-options">
@@ -135,9 +136,10 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {product.sizes?.length ? (
+            {/* Size Selection */}
+            {product.sizes && product.sizes.length > 0 && (
               <div className="selection-group">
                 <h3 className="selection-title p1-medium">Tallas disponibles</h3>
                 <div className="size-options">
@@ -152,14 +154,17 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-            ) : null}
+            )}
 
-            {/* Acciones rápidas */}
+            {/* Quick Actions */}
             <div className="product-actions">
               <div className="quantity-selector">
                 <label className="quantity-label l1">Cantidad:</label>
                 <div className="quantity-controls">
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="quantity-btn">
+                  <button
+                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                    className="quantity-btn"
+                  >
                     <span className="material-icons">remove</span>
                   </button>
                   <input
@@ -169,7 +174,10 @@ const ProductDetail = () => {
                     className="quantity-input"
                     min="1"
                   />
-                  <button onClick={() => setQuantity(quantity + 1)} className="quantity-btn">
+                  <button
+                    onClick={() => setQuantity(quantity + 1)}
+                    className="quantity-btn"
+                  >
                     <span className="material-icons">add</span>
                   </button>
                 </div>
@@ -180,16 +188,10 @@ const ProductDetail = () => {
                   className={`btn btn-primary cta1 ${!canAddToCart ? 'disabled' : ''}`}
                   disabled={!canAddToCart}
                   onClick={() => {
-                    addItem({
-                      product,
-                      quantity,
-                      selectedColor: selectedColor || undefined,
-                      selectedSize: selectedSize || undefined,
-                      unitPrice: unitPrice || product.basePrice,
-                    })
-                    window.dispatchEvent(new CustomEvent('swag:toast', {
-                      detail: { message: `Agregado: ${quantity}× ${product.name}` }
-                    }))
+                    // 🔧 Si ya integraste tu CartContext con addItem, podés reemplazar este alert por tu lógica.
+                    // Ejemplo:
+                    // addItem(product, quantity, { color: selectedColor, size: selectedSize })
+                    alert('Función de agregar al carrito por implementar')
                   }}
                 >
                   <span className="material-icons">shopping_cart</span>
@@ -199,16 +201,8 @@ const ProductDetail = () => {
                 <button
                   className="btn btn-secondary cta1"
                   onClick={() => {
-                    const subject = `Cotización: ${product.name} (${product.sku}) – ${quantity} u.`
-                    const total = (unitPrice || product.basePrice) * quantity
-                    const body =
-                      `Hola, quisiera una cotización de:\n\n` +
-                      `Producto: ${product.name}\nSKU: ${product.sku}\n` +
-                      (selectedColor ? `Color: ${selectedColor}\n` : '') +
-                      (selectedSize ? `Talla: ${selectedSize}\n` : '') +
-                      `Cantidad: ${quantity}\nPrecio unitario: ${unitPrice || product.basePrice}\nTotal: ${total}\n\nGracias.`
-                    window.location.href =
-                      `mailto:ventas@tuempresa.cl?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+                    // Si tenés flujo de cotización global, podés abrir modal o similar.
+                    alert('Función de cotización por implementar')
                   }}
                 >
                   <span className="material-icons">calculate</span>
@@ -219,7 +213,12 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Calculadora */}
+        {/* Pricing Calculator */}
+        <div className="pricing-section">
+          <PricingCalculator product={product} />
+        </div>
+
+        {/* Quotation Simulator */}
         <div className="mt-3">
           <QuotationForm product={product} />
         </div>
