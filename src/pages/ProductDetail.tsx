@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react'
+// ... (imports iguales)
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { products } from '../data/products'
-import { Product } from '../types/Product'
+import type { Product } from '../types/Product'
 import PricingCalculator from '../components/PricingCalculator'
+import { useCart } from '../context/CartContext'
 import './ProductDetail.css'
 
 const ProductDetail = () => {
@@ -11,23 +13,29 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState<string>('')
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [quantity, setQuantity] = useState<number>(1)
+  const { addItem } = useCart()
 
   useEffect(() => {
     if (id) {
       const foundProduct = products.find(p => p.id === parseInt(id))
       setProduct(foundProduct || null)
-      
-      // Set default selections
-      if (foundProduct?.colors && foundProduct.colors.length > 0) {
-        setSelectedColor(foundProduct.colors[0])
-      }
-      if (foundProduct?.sizes && foundProduct.sizes.length > 0) {
-        setSelectedSize(foundProduct.sizes[0])
-      }
+      if (foundProduct?.colors?.length) setSelectedColor(foundProduct.colors[0])
+      if (foundProduct?.sizes?.length) setSelectedSize(foundProduct.sizes[0])
     }
   }, [id])
 
-  // Handle loading state
+  const unitPrice = useMemo(() => {
+    if (!product) return 0
+    if (!product.priceBreaks?.length) return product.basePrice
+    const sorted = [...product.priceBreaks].sort((a, b) => a.minQty - b.minQty)
+    let last = sorted[0]
+    for (const br of sorted) {
+      if (quantity >= br.minQty) last = br
+      else break
+    }
+    return last.price
+  }, [product, quantity])
+
   if (!product) {
     return (
       <div className="container">
@@ -44,7 +52,6 @@ const ProductDetail = () => {
     )
   }
 
-  // Validate product status
   const canAddToCart = product.status === 'active' && product.stock > 0
 
   return (
@@ -58,15 +65,13 @@ const ProductDetail = () => {
         </nav>
 
         <div className="product-detail">
-          {/* Product Images */}
+          {/* Imágenes ... (igual que antes) */}
           <div className="product-images">
             <div className="main-image">
               <div className="image-placeholder">
                 <span className="material-icons">image</span>
               </div>
             </div>
-            
-            {/* Bug: thumbnails don't work */}
             <div className="image-thumbnails">
               {[1, 2, 3].map(i => (
                 <div key={i} className="thumbnail">
@@ -76,13 +81,11 @@ const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Product Info */}
+          {/* Info */}
           <div className="product-details">
             <div className="product-header">
               <h1 className="product-title h2">{product.name}</h1>
               <p className="product-sku p1">SKU: {product.sku}</p>
-              
-              {/* Status */}
               <div className="product-status">
                 {product.status === 'active' ? (
                   <span className="status-badge status-active l1">✓ Disponible</span>
@@ -94,7 +97,6 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Description */}
             {product.description && (
               <div className="product-description">
                 <h3 className="p1-medium">Descripción</h3>
@@ -102,8 +104,7 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Features */}
-            {product.features && product.features.length > 0 && (
+            {product.features?.length ? (
               <div className="product-features">
                 <h3 className="p1-medium">Características</h3>
                 <ul className="features-list">
@@ -115,12 +116,11 @@ const ProductDetail = () => {
                   ))}
                 </ul>
               </div>
-            )}
+            ) : null}
 
-            {/* Color Selection */}
-            {product.colors && product.colors.length > 0 && (
+            {product.colors?.length ? (
               <div className="selection-group">
-                <h3 className="selection-title p1-medium">Color disponibles</h3>
+                <h3 className="selection-title p1-medium">Colores disponibles</h3>
                 <div className="color-options">
                   {product.colors.map(color => (
                     <button
@@ -134,10 +134,9 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {/* Size Selection */}
-            {product.sizes && product.sizes.length > 0 && (
+            {product.sizes?.length ? (
               <div className="selection-group">
                 <h3 className="selection-title p1-medium">Tallas disponibles</h3>
                 <div className="size-options">
@@ -152,48 +151,64 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {/* Quick Actions */}
+            {/* Acciones rápidas */}
             <div className="product-actions">
               <div className="quantity-selector">
                 <label className="quantity-label l1">Cantidad:</label>
                 <div className="quantity-controls">
-                  <button 
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="quantity-btn"
-                  >
+                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} className="quantity-btn">
                     <span className="material-icons">remove</span>
                   </button>
-                  <input 
-                    type="number" 
-                    value={quantity} 
+                  <input
+                    type="number"
+                    value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
                     className="quantity-input"
                     min="1"
                   />
-                  <button 
-                    onClick={() => setQuantity(quantity + 1)}
-                    className="quantity-btn"
-                  >
+                  <button onClick={() => setQuantity(quantity + 1)} className="quantity-btn">
                     <span className="material-icons">add</span>
                   </button>
                 </div>
               </div>
 
               <div className="action-buttons">
-                <button 
+                <button
                   className={`btn btn-primary cta1 ${!canAddToCart ? 'disabled' : ''}`}
                   disabled={!canAddToCart}
-                  onClick={() => alert('Función de agregar al carrito por implementar')}
+                  onClick={() => {
+                    addItem({
+                      product,
+                      quantity,
+                      selectedColor: selectedColor || undefined,
+                      selectedSize: selectedSize || undefined,
+                      unitPrice: unitPrice || product.basePrice,
+                    })
+                    window.dispatchEvent(new CustomEvent('swag:toast', {
+                      detail: { message: `Agregado: ${quantity}× ${product.name}` }
+                    }))
+                  }}
                 >
                   <span className="material-icons">shopping_cart</span>
                   {canAddToCart ? 'Agregar al carrito' : 'No disponible'}
                 </button>
-                
-                <button 
+
+                <button
                   className="btn btn-secondary cta1"
-                  onClick={() => alert('Función de cotización por implementar')}
+                  onClick={() => {
+                    const subject = `Cotización: ${product.name} (${product.sku}) – ${quantity} u.`
+                    const total = (unitPrice || product.basePrice) * quantity
+                    const body =
+                      `Hola, quisiera una cotización de:\n\n` +
+                      `Producto: ${product.name}\nSKU: ${product.sku}\n` +
+                      (selectedColor ? `Color: ${selectedColor}\n` : '') +
+                      (selectedSize ? `Talla: ${selectedSize}\n` : '') +
+                      `Cantidad: ${quantity}\nPrecio unitario: ${unitPrice || product.basePrice}\nTotal: ${total}\n\nGracias.`
+                    window.location.href =
+                      `mailto:ventas@tuempresa.cl?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+                  }}
                 >
                   <span className="material-icons">calculate</span>
                   Solicitar cotización
@@ -203,7 +218,7 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* Pricing Calculator */}
+        {/* Calculadora */}
         <div className="pricing-section">
           <PricingCalculator product={product} />
         </div>

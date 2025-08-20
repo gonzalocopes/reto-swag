@@ -25,11 +25,7 @@
   color: white;
   transition: opacity 0.2s;
 }
-
-.logo:hover {
-  opacity: 0.8;
-}
-
+.logo:hover { opacity: 0.8; }
 .logo-icon {
   width: 40px;
   height: 40px;
@@ -40,13 +36,9 @@
   justify-content: center;
   color: white;
 }
+.logo-text { color: white; font-weight: 600; }
 
-.logo-text {
-  color: white;
-  font-weight: 600;
-}
-
-/* Navigation */
+/* Navigation (desktop / tablet) */
 .nav {
   display: flex;
   align-items: center;
@@ -54,9 +46,8 @@
   flex: 1;
   justify-content: center;
 }
-
 .nav-link {
-  color: rgba(255, 255, 255, 0.8);
+  color: rgba(255,255,255,0.8);
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -68,44 +59,70 @@
   border: none;
   cursor: pointer;
 }
+.nav-link:hover { color: white; background: rgba(255,255,255,0.1); }
+.nav-link .material-icons { font-size: 18px; }
 
-.nav-link:hover {
-  color: white;
-  background: rgba(255, 255, 255, 0.1);
-}
-
-.nav-link .material-icons {
-  font-size: 18px;
-}
+/* Cart button (desktop) */
+.cart-btn { position: relative; }
 
 /* Header Actions */
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.header-actions { display: flex; align-items: center; gap: 12px; }
+
+/* Cart bump animation */
+@keyframes bump {
+  0% { transform: scale(1); }
+  10% { transform: scale(1.08); }
+  30% { transform: scale(1.2); }
+  50% { transform: scale(1.08); }
+  100% { transform: scale(1); }
 }
+.cart-btn.bump,
+.cart-mobile-btn.bump { animation: bump 0.4s ease-out; }
+
+/* --- CART MÓVIL (icono con badge) --- */
+.cart-mobile-btn {
+  display: none; /* visible solo en mobile */
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #2a2a2a;
+  color: #fff;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.cart-mobile-btn .material-icons { font-size: 22px; }
+.cart-mobile-btn .badge {
+  position: absolute;
+  top: -6px; right: -6px;
+  background: #10b981;
+  color: #fff;
+  border-radius: 999px;
+  padding: 2px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 0 0 2px #1a1a1a;
+}
+
+/* Login */
+.login-btn { display: inline-flex; }
+.login-text { display: inline; }
 
 /* Responsive */
 @media (max-width: 768px) {
-  .header-content {
-    gap: 16px;
-  }
-  
-  .nav {
-    gap: 16px;
-  }
-  
-  .nav-link {
-    padding: 6px 12px;
-  }
-  
-  .logo-text {
-    display: none;
-  }
+  .header-content { gap: 16px; }
+  .nav { gap: 16px; }
+  .nav-link { padding: 6px 12px; }
+  .logo-text { display: none; }
 }
 
 @media (max-width: 480px) {
-  .nav {
-    display: none;
-  }
+  /* En móvil ocultamos las opciones del nav (incluye el carrito grande),
+     pero mostramos el botón de carrito móvil + mantenemos el login como icon+texto corto */
+  .nav { display: none; }
+
+  .cart-mobile-btn { display: inline-flex; }
+  .login-btn { padding: 8px 10px; }
+  .login-text { display: none; } /* dejá solo el icono si querés más compacto */
 }

@@ -1,10 +1,13 @@
-import { categories, suppliers } from '../data/products'
+import { categories } from '../data/products'
 import './ProductFilters.css'
+
+type SupplierStat = { id: string; name: string; count: number }
 
 interface ProductFiltersProps {
   selectedCategory: string
   searchQuery: string
   sortBy: string
+  suppliers: SupplierStat[]
   onCategoryChange: (category: string) => void
   onSearchChange: (search: string) => void
   onSortChange: (sort: string) => void
@@ -14,6 +17,7 @@ const ProductFilters = ({
   selectedCategory,
   searchQuery,
   sortBy,
+  suppliers,
   onCategoryChange,
   onSearchChange,
   onSortChange
@@ -21,7 +25,7 @@ const ProductFilters = ({
   return (
     <div className="product-filters">
       <div className="filters-card">
-        {/* Search Bar */}
+        {/* Buscador */}
         <div className="search-section">
           <div className="search-box">
             <span className="material-icons">search</span>
@@ -33,7 +37,7 @@ const ProductFilters = ({
               className="search-input p1"
             />
             {searchQuery && (
-              <button 
+              <button
                 className="clear-search"
                 onClick={() => onSearchChange('')}
               >
@@ -43,7 +47,7 @@ const ProductFilters = ({
           </div>
         </div>
 
-        {/* Category Filters */}
+        {/* Categorías */}
         <div className="filter-section">
           <h3 className="filter-title p1-medium">Categorías</h3>
           <div className="category-filters">
@@ -61,11 +65,11 @@ const ProductFilters = ({
           </div>
         </div>
 
-        {/* Sort Options */}
+        {/* Orden */}
         <div className="filter-section">
           <h3 className="filter-title p1-medium">Ordenar por</h3>
-          <select 
-            value={sortBy} 
+          <select
+            value={sortBy}
             onChange={(e) => onSortChange(e.target.value)}
             className="sort-select p1"
           >
@@ -75,16 +79,23 @@ const ProductFilters = ({
           </select>
         </div>
 
-        {/* Quick Stats - Bug: hardcoded values instead of dynamic */}
+        {/* Proveedores dinámicos */}
         <div className="filter-section">
           <h3 className="filter-title p1-medium">Proveedores</h3>
           <div className="supplier-list">
-            {suppliers.map(supplier => (
-              <div key={supplier.id} className="supplier-item">
-                <span className="supplier-name l1">{supplier.name}</span>
-                <span className="supplier-count l1">{supplier.products}</span>
+            {suppliers.length === 0 ? (
+              <div className="supplier-item">
+                <span className="supplier-name l1">Sin resultados</span>
+                <span className="supplier-count l1">0</span>
               </div>
-            ))}
+            ) : (
+              suppliers.map(supplier => (
+                <div key={supplier.id} className="supplier-item">
+                  <span className="supplier-name l1">{supplier.name}</span>
+                  <span className="supplier-count l1">{supplier.count}</span>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

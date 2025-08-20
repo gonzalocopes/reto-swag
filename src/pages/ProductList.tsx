@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import ProductCard from '../components/ProductCard'
 import ProductFilters from '../components/ProductFilters'
-import { products as allProducts } from '../data/products'
-import { Product } from '../types/Product'
+import { products as allProducts, suppliers as allSuppliers } from '../data/products'
+import type { Product } from '../types/Product'
 import './ProductList.css'
+
+type SupplierStat = { id: string; name: string; count: number }
 
 const ProductList = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(allProducts)
@@ -11,33 +13,30 @@ const ProductList = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [sortBy, setSortBy] = useState('name')
 
-  // Filter and sort products based on criteria
   const filterProducts = (category: string, search: string, sort: string) => {
     let filtered = [...allProducts]
 
-    // Category filter
     if (category !== 'all') {
-      filtered = filtered.filter(product => product.category === category)
+      filtered = filtered.filter(p => p.category === category)
     }
 
-    // Search filter
+    // búsqueda: nombre + SKU (case-insensitive, trim)
     if (search) {
-      filtered = filtered.filter(product => 
-        product.name.includes(search) ||
-        product.sku.includes(search)
+      const q = search.trim().toLowerCase()
+      filtered = filtered.filter(p =>
+        p.name.toLowerCase().includes(q) || p.sku.toLowerCase().includes(q)
       )
     }
 
-    // Sorting logic
     switch (sort) {
       case 'name':
         filtered.sort((a, b) => a.name.localeCompare(b.name))
         break
       case 'price':
-        // Price sorting to implement
+        filtered.sort((a, b) => (a.basePrice || 0) - (b.basePrice || 0))
         break
       case 'stock':
-        filtered.sort((a, b) => b.stock - a.stock)
+        filtered.sort((a, b) => (b.stock || 0) - (a.stock || 0))
         break
       default:
         break
@@ -61,10 +60,23 @@ const ProductList = () => {
     filterProducts(selectedCategory, searchQuery, sort)
   }
 
+  // proveedores dinámicos según la lista filtrada actual
+  const supplierStats: SupplierStat[] = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const p of filteredProducts) {
+      counts.set(p.supplier, (counts.get(p.supplier) || 0) + 1)
+    }
+    // aseguramos que aparezcan con su nombre
+    return allSuppliers
+      .map(s => ({ id: s.id, name: s.name, count: counts.get(s.id) || 0 }))
+      .filter(s => s.count > 0)
+      .sort((a, b) => b.count - a.count)
+  }, [filteredProducts])
+
   return (
     <div className="product-list-page">
       <div className="container">
-        {/* Page Header */}
+        {/* Encabezado */}
         <div className="page-header">
           <div className="page-info">
             <h1 className="page-title h2">Catálogo de Productos</h1>
@@ -72,37 +84,38 @@ const ProductList = () => {
               Descubre nuestra selección de productos promocionales premium
             </p>
           </div>
-          
+
           <div className="page-stats">
             <div className="stat-item">
               <span className="stat-value p1-medium">{filteredProducts.length}</span>
               <span className="stat-label l1">productos</span>
             </div>
             <div className="stat-item">
-              <span className="stat-value p1-medium">6</span>
-              <span className="stat-label l1">categorías</span>
+              <span className="stat-value p1-medium">{supplierStats.length}</span>
+              <span className="stat-label l1">proveedores</span>
             </div>
           </div>
         </div>
 
-        {/* Filters */}
+        {/* Filtros */}
         <ProductFilters
           selectedCategory={selectedCategory}
           searchQuery={searchQuery}
           sortBy={sortBy}
+          suppliers={supplierStats}
           onCategoryChange={handleCategoryChange}
           onSearchChange={handleSearchChange}
           onSortChange={handleSortChange}
         />
 
-        {/* Products Grid */}
+        {/* Grid de productos */}
         <div className="products-section">
           {filteredProducts.length === 0 ? (
             <div className="empty-state">
               <span className="material-icons">search_off</span>
               <h3 className="h2">No hay productos</h3>
               <p className="p1">No se encontraron productos que coincidan con tu búsqueda.</p>
-              <button 
+              <button
                 className="btn btn-primary cta1"
                 onClick={() => {
                   setSearchQuery('')
