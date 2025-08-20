@@ -1,28 +1,50 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import './CartToast.css'
 
-type ToastData = { message: string }
+type CartAddedDetail = { qty: number; total: number }
 
 export default function CartToast() {
   const [open, setOpen] = useState(false)
-  const [data, setData] = useState<ToastData>({ message: '' })
+  const [qty, setQty] = useState(0)
+  const [total, setTotal] = useState(0)
+  const navigate = useNavigate()
 
   useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent<ToastData>).detail
-      setData(detail)
+    const onAdded = (e: Event) => {
+      const detail = (e as CustomEvent<CartAddedDetail>).detail
+      setQty(detail?.qty ?? 0)
+      setTotal(detail?.total ?? 0)
       setOpen(true)
-      const t = setTimeout(() => setOpen(false), 1800)
-      return () => clearTimeout(t)
+      window.clearTimeout((window as any).__cart_toast_timer)
+      ;(window as any).__cart_toast_timer = window.setTimeout(() => setOpen(false), 2000)
     }
-    window.addEventListener('swag:toast', handler as EventListener)
-    return () => window.removeEventListener('swag:toast', handler as EventListener)
+
+    window.addEventListener('cart:added', onAdded as EventListener)
+    return () => window.removeEventListener('cart:added', onAdded as EventListener)
   }, [])
 
+  if (!open) return null
+
   return (
-    <div className={`cart-toast ${open ? 'show' : ''}`}>
-      <span className="material-icons">check_circle</span>
-      <span className="toast-text l1">{data.message}</span>
+    <div className="cart-toast" role="status" aria-live="polite">
+      <span className="material-icons cart-toast__icon">check_circle</span>
+      <div className="cart-toast__content">
+        <strong>Agregado al carrito</strong>
+        <span className="l1">
+          {qty} {qty === 1 ? 'item' : 'items'} • ${total.toLocaleString('es-CL')}
+        </span>
+      </div>
+      <button
+        type="button"
+        className="btn btn-secondary cart-toast__btn"
+        onClick={() => {
+          setOpen(false)       // cierra el toast
+          navigate('/cart')    // navegación SPA sin recargar la página
+        }}
+      >
+        Ver carrito
+      </button>
     </div>
   )
 }

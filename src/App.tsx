@@ -4,14 +4,14 @@ import Header from './components/Header'
 import ProductList from './pages/ProductList'
 import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
-import CartToast from './components/CartToast' // si no querés el toast, también podés quitarlo
+import CartToast from './components/CartToast'   // ⬅️ aquí
 import './App.css'
 
 function App() {
   return (
     <div className="App">
       <Header />
-      <CartToast />
+      <CartToast /> {/* ⬅️ toast EFÍMERO, sin barra persistente */}
       <main>
         <Routes>
           <Route path="/" element={<ProductList />} />

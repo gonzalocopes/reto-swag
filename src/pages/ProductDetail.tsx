@@ -1,10 +1,10 @@
 // src/pages/ProductDetail.tsx
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { products } from '../data/products'
 import { Product } from '../types/Product'
 import PricingCalculator from '../components/PricingCalculator'
-import QuotationForm from '../components/QuotationForm'
+import { useCart } from '../context/CartContext'
 import './ProductDetail.css'
 
 const ProductDetail = () => {
@@ -13,23 +13,28 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState<string>('')
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [quantity, setQuantity] = useState<number>(1)
+  const { addItem } = useCart()
 
   useEffect(() => {
-    if (id) {
-      const foundProduct = products.find(p => p.id === parseInt(id))
-      setProduct(foundProduct || null)
-
-      // Set default selections
-      if (foundProduct?.colors && foundProduct.colors.length > 0) {
-        setSelectedColor(foundProduct.colors[0])
-      }
-      if (foundProduct?.sizes && foundProduct.sizes.length > 0) {
-        setSelectedSize(foundProduct.sizes[0])
-      }
-    }
+    if (!id) return
+    const found = products.find(p => p.id === Number(id)) || null
+    setProduct(found)
+    if (found?.colors?.length) setSelectedColor(found.colors[0])
+    if (found?.sizes?.length) setSelectedSize(found.sizes[0])
+    setQuantity(1)
   }, [id])
 
-  // Handle loading/not-found state
+  // precio unitario según breaks y cantidad
+  const unitPrice = useMemo(() => {
+    if (!product) return 0
+    if (!product.priceBreaks || product.priceBreaks.length === 0) return product.basePrice
+    let price = product.basePrice
+    for (const br of product.priceBreaks) {
+      if (quantity >= br.minQty) price = br.price
+    }
+    return price
+  }, [product, quantity])
+
   if (!product) {
     return (
       <div className="container">
@@ -46,8 +51,27 @@ const ProductDetail = () => {
     )
   }
 
-  // Validate product status
   const canAddToCart = product.status === 'active' && product.stock > 0
+
+  const handleAddToCart = () => {
+    if (!canAddToCart) return
+
+    // ⬇️ Enviamos el AddItemInput que espera el contexto
+    addItem({
+      product,
+      quantity,
+      selectedColor: selectedColor || product.colors?.[0],
+      selectedSize: selectedSize || product.sizes?.[0],
+      unitPrice,
+    })
+
+    // dispara toast/animación
+    window.dispatchEvent(
+      new CustomEvent('cart:added', {
+        detail: { qty: quantity, total: unitPrice * quantity },
+      })
+    )
+  }
 
   return (
     <div className="product-detail-page">
@@ -67,8 +91,6 @@ const ProductDetail = () => {
                 <span className="material-icons">image</span>
               </div>
             </div>
-
-            {/* Thumbnails */}
             <div className="image-thumbnails">
               {[1, 2, 3].map(i => (
                 <div key={i} className="thumbnail">
@@ -84,7 +106,6 @@ const ProductDetail = () => {
               <h1 className="product-title h2">{product.name}</h1>
               <p className="product-sku p1">SKU: {product.sku}</p>
 
-              {/* Status */}
               <div className="product-status">
                 {product.status === 'active' ? (
                   <span className="status-badge status-active l1">✓ Disponible</span>
@@ -96,7 +117,6 @@ const ProductDetail = () => {
               </div>
             </div>
 
-            {/* Description */}
             {product.description && (
               <div className="product-description">
                 <h3 className="p1-medium">Descripción</h3>
@@ -104,23 +124,21 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Features */}
-            {product.features && product.features.length > 0 && (
+            {product.features?.length ? (
               <div className="product-features">
                 <h3 className="p1-medium">Características</h3>
                 <ul className="features-list">
-                  {product.features.map((feature, index) => (
-                    <li key={index} className="feature-item l1">
+                  {product.features.map((feature, idx) => (
+                    <li key={idx} className="feature-item l1">
                       <span className="material-icons">check_circle</span>
                       {feature}
                     </li>
                   ))}
                 </ul>
               </div>
-            )}
+            ) : null}
 
-            {/* Color Selection */}
-            {product.colors && product.colors.length > 0 && (
+            {product.colors?.length ? (
               <div className="selection-group">
                 <h3 className="selection-title p1-medium">Colores disponibles</h3>
                 <div className="color-options">
@@ -136,10 +154,9 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
-            {/* Size Selection */}
-            {product.sizes && product.sizes.length > 0 && (
+            {product.sizes?.length ? (
               <div className="selection-group">
                 <h3 className="selection-title p1-medium">Tallas disponibles</h3>
                 <div className="size-options">
@@ -154,7 +171,7 @@ const ProductDetail = () => {
                   ))}
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Quick Actions */}
             <div className="product-actions">
@@ -187,12 +204,7 @@ const ProductDetail = () => {
                 <button
                   className={`btn btn-primary cta1 ${!canAddToCart ? 'disabled' : ''}`}
                   disabled={!canAddToCart}
-                  onClick={() => {
-                    // 🔧 Si ya integraste tu CartContext con addItem, podés reemplazar este alert por tu lógica.
-                    // Ejemplo:
-                    // addItem(product, quantity, { color: selectedColor, size: selectedSize })
-                    alert('Función de agregar al carrito por implementar')
-                  }}
+                  onClick={handleAddToCart}
                 >
                   <span className="material-icons">shopping_cart</span>
                   {canAddToCart ? 'Agregar al carrito' : 'No disponible'}
@@ -201,8 +213,18 @@ const ProductDetail = () => {
                 <button
                   className="btn btn-secondary cta1"
                   onClick={() => {
-                    // Si tenés flujo de cotización global, podés abrir modal o similar.
-                    alert('Función de cotización por implementar')
+                    const subject = encodeURIComponent(`Cotización - ${product.name} (${product.sku})`)
+                    const body = encodeURIComponent(
+                      `Hola, quiero una cotización:\n\n` +
+                      `Producto: ${product.name}\n` +
+                      `SKU: ${product.sku}\n` +
+                      `Cantidad: ${quantity}\n` +
+                      (selectedColor ? `Color: ${selectedColor}\n` : '') +
+                      (selectedSize ? `Talla: ${selectedSize}\n` : '') +
+                      `Precio unitario estimado: $${unitPrice.toLocaleString('es-CL')}\n\n` +
+                      `Gracias.`
+                    )
+                    window.location.href = `mailto:ventas@swag.cl?subject=${subject}&body=${body}`
                   }}
                 >
                   <span className="material-icons">calculate</span>
@@ -216,11 +238,6 @@ const ProductDetail = () => {
         {/* Pricing Calculator */}
         <div className="pricing-section">
           <PricingCalculator product={product} />
-        </div>
-
-        {/* Quotation Simulator */}
-        <div className="mt-3">
-          <QuotationForm product={product} />
         </div>
       </div>
     </div>
