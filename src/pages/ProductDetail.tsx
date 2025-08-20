@@ -6,6 +6,7 @@ import type { Product } from '../types/Product'
 import PricingCalculator from '../components/PricingCalculator'
 import { useCart } from '../context/CartContext'
 import './ProductDetail.css'
+import QuotationForm from '../components/QuotationForm'
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>()
@@ -219,8 +220,8 @@ const ProductDetail = () => {
         </div>
 
         {/* Calculadora */}
-        <div className="pricing-section">
-          <PricingCalculator product={product} />
+        <div className="mt-3">
+          <QuotationForm product={product} />
         </div>
       </div>
     </div>

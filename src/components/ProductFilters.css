@@ -135,7 +135,7 @@
   background: white;
 }
 
-/* Supplier List */
+/* Supplier List (legacy, por si lo usás en otro lado) */
 .supplier-list {
   display: flex;
   flex-direction: column;
@@ -163,6 +163,80 @@
   font-weight: 500;
 }
 
+/* ➕ NUEVO: helpers para filtros avanzados */
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: #667eea;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+}
+.link-btn:hover {
+  background: #eef2ff;
+}
+
+.supplier-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.supplier-pill {
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #374151;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.supplier-pill.active {
+  background: #1a1a1a;
+  color: white;
+  border-color: #1a1a1a;
+}
+.pill-count {
+  background: #e2e8f0;
+  color: #475569;
+  padding: 0 6px;
+  margin-left: 6px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.price-range {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+.price-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.price-input {
+  width: 140px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+
+.filter-actions {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .filters-card {
@@ -181,6 +255,10 @@
   .category-btn {
     padding: 6px 12px;
     font-size: 14px;
+  }
+
+  .price-input {
+    width: 100%;
   }
 }
 

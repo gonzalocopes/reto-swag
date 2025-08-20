@@ -1,0 +1,34 @@
+.quotation { border-radius: 12px; overflow: hidden; }
+.quotation-header {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+.quotation-grid {
+  padding: 20px 24px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.quotation-grid .full { grid-column: 1 / -1; }
+
+.quotation-summary {
+  margin: 0 24px 16px;
+  padding: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.quotation-summary .row { display: flex; justify-content: space-between; }
+.quotation-summary .row.total { padding-top: 8px; border-top: 2px solid #e2e8f0; }
+
+.quotation-actions {
+  padding: 0 24px 20px;
+  display: flex; gap: 12px; flex-wrap: wrap;
+}
+.quotation-actions .btn { flex: 1; min-width: 220px; }
+
+@media (max-width: 768px) {
+  .quotation-grid { grid-template-columns: 1fr; }
+}
