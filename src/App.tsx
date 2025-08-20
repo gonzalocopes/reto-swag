@@ -4,16 +4,14 @@ import Header from './components/Header'
 import ProductList from './pages/ProductList'
 import ProductDetail from './pages/ProductDetail'
 import Cart from './pages/Cart'
-import CartToast from './components/CartToast'
-import MobileCartBar from './components/MobileCartBar' // ⬅️ NUEVO
+import CartToast from './components/CartToast' // si no querés el toast, también podés quitarlo
 import './App.css'
 
 function App() {
   return (
     <div className="App">
       <Header />
-      <CartToast />          {/* Toast global */}
-      <MobileCartBar />      {/* ⬅️ Barra flotante móvil */}
+      <CartToast />
       <main>
         <Routes>
           <Route path="/" element={<ProductList />} />
